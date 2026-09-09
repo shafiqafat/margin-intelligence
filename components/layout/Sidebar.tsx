@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Truck,
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const navigation = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -101,16 +102,22 @@ export function Sidebar() {
           <span>Settings</span>
         </Link>
 
-        <div className="mt-3 flex items-center gap-3 rounded-lg bg-muted/60 p-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-            N
+        <div className="mt-3 rounded-lg bg-muted/60 p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+              N
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold">Nadia</p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                Business Owner
+              </p>
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold">Nadia</p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              Business Owner
-            </p>
+          <div className="mt-3 border-t pt-3">
+            <LogoutButton />
           </div>
         </div>
       </div>
