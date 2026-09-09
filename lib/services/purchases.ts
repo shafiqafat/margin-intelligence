@@ -32,3 +32,19 @@ export async function getPurchaseItems(businessId: string) {
 
   return data;
 }
+
+export type CreatePurchaseItemInput = {
+  productId: string;
+  quantity: number;
+  unitCost: number;
+};
+
+export type CreatePurchaseInput = {
+  supplierId: string;
+  purchaseDate: string;
+  reference?: string;
+  shippingCost: number;
+  additionalCost: number;
+  notes?: string;
+  items: CreatePurchaseItemInput[];
+};
