@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { updateInsightStatus } from "@/app/(dashboard)/insights/actions";
 
@@ -21,6 +22,7 @@ export function InsightStatusActions({
   status,
 }: InsightStatusActionsProps) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function changeStatus(nextStatus: InsightStatus) {
     startTransition(async () => {
@@ -46,10 +48,16 @@ export function InsightStatusActions({
       <button
         type="button"
         disabled={isPending}
-        onClick={() => changeStatus("investigating")}
+        onClick={() => {
+          startTransition(async () => {
+            await updateInsightStatus(insightId, "investigating");
+
+            router.push(`/insights/${insightId}`);
+          });
+        }}
         className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
       >
-        {isPending ? "Updating..." : "Start investigating"}
+        {isPending ? "Opening..." : "Start investigating"}
       </button>
     );
   }

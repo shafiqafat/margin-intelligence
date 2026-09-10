@@ -9,6 +9,7 @@ import { calculateTrueUnitCost } from "./calculateTrueCost";
 type Product = {
   id: string;
   name: string;
+  target_margin: number;
 };
 
 type PurchaseItem = {
@@ -62,6 +63,14 @@ export function calculateProductProfitability({
   const productPurchaseItems = purchaseItems.filter(
     (item) => item.product_id === product.id,
   );
+  const productPurchases = purchaseItems.filter(
+    (item) => item.product_id === product.id,
+  );
+
+  const purchaseCost = productPurchases.reduce(
+    (total, item) => total + item.quantity * item.unit_cost,
+    0,
+  );
 
   const weightedAverageUnitCost =
     calculateWeightedAverageUnitCost(productPurchaseItems);
@@ -103,6 +112,10 @@ export function calculateProductProfitability({
     netRevenue,
   );
 
+  const targetMargin = product.target_margin;
+
+  const marginGap = targetMargin - contributionMargin;
+
   return {
     productId: product.id,
     productName: product.name,
@@ -113,6 +126,9 @@ export function calculateProductProfitability({
 
     directExpenses: productDirectExpenses,
     returnCosts,
+    purchaseCost,
+    targetMargin,
+    marginGap,
 
     trueUnitCost,
 

@@ -74,6 +74,7 @@ export default async function InsightsPage() {
                 )}
               </div>
 
+              {/* Financial impact */}
               <div className="mt-5 border-t pt-5">
                 <p className="text-xs text-muted-foreground">
                   Estimated financial impact
@@ -90,7 +91,54 @@ export default async function InsightsPage() {
                   {business.currency}
                 </p>
               </div>
-              <div className="mt-5 flex items-center justify-between border-t pt-5">
+
+              {/* Explanation */}
+              {insight.what_happened ||
+              insight.why_it_matters ||
+              insight.what_to_investigate ? (
+                <div className="mt-5 border-t pt-5">
+                  <div className="grid gap-6 md:grid-cols-3">
+                    {insight.what_happened && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          What happened
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6">
+                          {insight.what_happened}
+                        </p>
+                      </div>
+                    )}
+
+                    {insight.why_it_matters && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Why it matters
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6">
+                          {insight.why_it_matters}
+                        </p>
+                      </div>
+                    )}
+
+                    {insight.what_to_investigate && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          What to investigate
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6">
+                          {insight.what_to_investigate}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Status */}
+              <div className="mt-5 flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>
 

@@ -190,6 +190,6 @@ export function generateInsights(
 
   return findings.map((finding) => ({
     ...finding,
-    description: generateInsightExplanation(finding, findings),
+    explanation: generateInsightExplanation(finding, findings),
   }));
 }

@@ -44,11 +44,18 @@ export default async function TestIntelligencePage() {
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-xs text-muted-foreground">Margin Gap</p>
+                {"marginGap" in insight &&
+                  typeof insight.marginGap === "number" && (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Margin Gap
+                      </p>
 
-                <p className="mt-1 font-semibold">
-                  {insight.marginGap.toFixed(1)} points
-                </p>
+                      <p className="mt-1 font-semibold">
+                        {insight.marginGap.toFixed(1)} points
+                      </p>
+                    </>
+                  )}
               </div>
 
               <div>
@@ -61,6 +68,41 @@ export default async function TestIntelligencePage() {
                 </p>
               </div>
             </div>
+            {insight.explanation && (
+              <div className="mt-6 border-t pt-5">
+                <div className="grid gap-5 md:grid-cols-3">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      What happened
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      {insight.explanation.whatHappened}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Why it matters
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      {insight.explanation.whyItMatters}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      What to investigate
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      {insight.explanation.whatToInvestigate}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
 

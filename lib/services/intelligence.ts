@@ -85,6 +85,13 @@ export async function syncInsights(businessId: string) {
           title: finding.title,
           description: finding.description,
           financial_impact: finding.financialImpact,
+
+          what_happened: finding.explanation?.whatHappened ?? null,
+
+          why_it_matters: finding.explanation?.whyItMatters ?? null,
+
+          what_to_investigate: finding.explanation?.whatToInvestigate ?? null,
+
           detected_at: existingInsight.detected_at,
         })
         .eq("id", existingInsight.id)
@@ -110,6 +117,13 @@ export async function syncInsights(businessId: string) {
         title: finding.title,
         description: finding.description,
         financial_impact: finding.financialImpact,
+
+        what_happened: finding.explanation?.whatHappened ?? null,
+
+        why_it_matters: finding.explanation?.whyItMatters ?? null,
+
+        what_to_investigate: finding.explanation?.whatToInvestigate ?? null,
+
         entity_type: "product",
         entity_id: finding.productId,
         status: "new",
