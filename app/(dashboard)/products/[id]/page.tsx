@@ -2,13 +2,8 @@ import Link from "next/link";
 
 import { getCurrentBusiness } from "@/lib/services/business";
 import { getProductById } from "@/lib/services/products";
-import { getPurchaseItems } from "@/lib/services/purchases";
-import { getSaleItems } from "@/lib/services/sales";
-import { getReturns } from "@/lib/services/returns";
-import { getExpenses } from "@/lib/services/expenses";
-import { getCostAllocations } from "@/lib/services/allocations";
+import { getProductProfitability } from "@/lib/services/profitability";
 
-import { calculateProductProfitability } from "@/domain/cost/calculateProductProfitability";
 import { DeactivateProductButton } from "@/components/products/DeactivateProductButton";
 
 export default async function ProductPage({
@@ -49,23 +44,21 @@ export default async function ProductPage({
     );
   }
 
-  const [purchaseItems, saleItems, returns, expenses, allocations] =
-    await Promise.all([
-      getPurchaseItems(business.id),
-      getSaleItems(business.id),
-      getReturns(business.id),
-      getExpenses(business.id),
-      getCostAllocations(business.id),
-    ]);
+  const profitability = await getProductProfitability(business.id, id);
 
-  const profitability = calculateProductProfitability({
-    product,
-    purchaseItems,
-    saleItems,
-    returns,
-    expenses,
-    allocations,
-  });
+  if (!profitability) {
+    return (
+      <main className="p-8">
+        <h1 className="text-2xl font-semibold">
+          Profitability data unavailable
+        </h1>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          We could not calculate profitability for this product.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="space-y-8 p-8">
@@ -194,7 +187,8 @@ export default async function ProductPage({
             </span>
 
             <span className="font-medium">
-              {profitability.directCosts.toLocaleString()} {business.currency}
+              {profitability.directExpenses.toLocaleString()}{" "}
+              {business.currency}
             </span>
           </div>
 

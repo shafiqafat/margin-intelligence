@@ -1,5 +1,4 @@
 import { calculateWeightedAverageUnitCost } from "./calculateUnitCost";
-import { calculateProductDirectCosts } from "./calculateDirectCosts";
 import { calculateNetUnitsSold } from "./calculateSalesQuantity";
 import { calculateReturnImpact } from "./calculateReturns";
 import { calculateProductNetRevenue } from "./calculateRevenue";
@@ -67,11 +66,9 @@ export function calculateProductProfitability({
   const weightedAverageUnitCost =
     calculateWeightedAverageUnitCost(productPurchaseItems);
 
-  const directCosts = calculateProductDirectCosts(
-    product.id,
-    expenses,
-    allocations,
-  );
+  const productDirectExpenses = expenses
+    .filter((expense) => expense.product_id === product.id)
+    .reduce((total, expense) => total + expense.amount, 0);
 
   const netUnitsSold = calculateNetUnitsSold(product.id, saleItems, returns);
 
@@ -87,17 +84,17 @@ export function calculateProductProfitability({
     return total + impact.returnCosts;
   }, 0);
 
-  const trueUnitCost = calculateTrueUnitCost({
-    weightedAverageUnitCost,
-    directCosts,
-    netUnitsSold,
-  });
+  const trueUnitCost = calculateTrueUnitCost(
+    product.id,
+    purchaseItems,
+    allocations,
+  );
 
   const contribution = calculateContribution({
     netRevenue,
-    weightedAverageUnitCost,
+    trueUnitCost,
     netUnitsSold,
-    directCosts,
+    directExpenses: productDirectExpenses,
     returnCosts,
   });
 
@@ -114,7 +111,7 @@ export function calculateProductProfitability({
 
     weightedAverageUnitCost,
 
-    directCosts,
+    directExpenses: productDirectExpenses,
     returnCosts,
 
     trueUnitCost,
