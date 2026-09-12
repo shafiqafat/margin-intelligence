@@ -102,7 +102,7 @@ export function MarginTrendChart({
 
         <div className="flex items-center gap-2">
           <span className="w-4 border-t border-dashed border-primary/50" />
-          <span>Target {targetMargin}%</span>
+          <span>Target {targetMargin.toFixed(1)}%</span>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export function MarginTrendChart({
             margin={{
               top: 8,
               right: 8,
-              left: -20,
+              left: 8,
               bottom: 0,
             }}
           >
@@ -158,10 +158,10 @@ export function MarginTrendChart({
             />
 
             <YAxis
-              domain={[0, 50]}
+              domain={["dataMin - 10", "dataMax + 10"]}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `${value}%`}
+              tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
               tick={{
                 fill: "var(--muted-foreground)",
                 fontSize: 12,
@@ -174,7 +174,7 @@ export function MarginTrendChart({
               strokeOpacity={0.55}
               strokeDasharray="5 4"
               label={{
-                value: `Target ${targetMargin}%`,
+                value: `Target ${targetMargin.toFixed(1)}%`,
                 position: "insideTopRight",
                 fill: "var(--primary)",
                 fontSize: 11,
