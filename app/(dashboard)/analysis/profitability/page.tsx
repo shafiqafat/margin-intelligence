@@ -1,209 +1,390 @@
 import Link from "next/link";
-
 import { getCurrentBusiness } from "@/lib/services/business";
 import { getProfitabilityAnalysis } from "@/lib/services/profitabilityAnalysis";
+import type { DashboardRange } from "@/types/dashboard";
 
-export default async function ProfitabilityAnalysisPage() {
+type SearchParams = Promise<{
+  range?: string;
+}>;
+
+function getValidRange(value?: string): DashboardRange {
+  if (value === "7" || value === "30" || value === "90") {
+    return Number(value) as DashboardRange;
+  }
+
+  return 30;
+}
+
+function formatCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat("en-BD", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-BD", {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatPercent(value: number) {
+  return `${formatNumber(value)}%`;
+}
+
+export default async function ProfitabilityAnalysisPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const business = await getCurrentBusiness();
 
   if (!business) {
     return (
-      <main className="p-8">
-        <h1 className="text-2xl font-semibold">No business found</h1>
-      </main>
+      <div className="p-6">
+        <h1 className="text-xl font-semibold">Business not found</h1>
+      </div>
     );
   }
 
-  const analysis = await getProfitabilityAnalysis(business.id);
+  const params = await searchParams;
+  const range = getValidRange(params.range);
+
+  const data = await getProfitabilityAnalysis(
+    business.id,
+    range,
+    business.timezone,
+  );
+
+  const currency = business.currency;
+
+  const revenueImproved = data.revenueChange >= 0;
+  const contributionImproved = data.contributionChange >= 0;
+  const marginImproved = data.marginChange >= 0;
+
+  const bestProduct = data.products[0];
+
+  const attentionProducts = data.products.filter(
+    (product) => product.contribution < 0,
+  );
 
   return (
-    <main className="space-y-8 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Profitability Analysis</h1>
+    <div className="space-y-8 p-6 md:p-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Analysis</p>
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          See which products are contributing the most to your business.
-        </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            Profitability
+          </h1>
+
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Understand which products are generating contribution and where
+            profitability is being lost.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1 rounded-lg border bg-background p-1">
+          {[7, 30, 90].map((days) => (
+            <Link
+              key={days}
+              href={`/analysis/profitability?range=${days}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                range === days
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {days} days
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Revenue"
+          value={formatCurrency(data.revenue, currency)}
+          detail={
+            <>
+              <span
+                className={
+                  revenueImproved
+                    ? "font-medium text-foreground"
+                    : "font-medium text-destructive"
+                }
+              >
+                {revenueImproved ? "+" : ""}
+                {formatCurrency(data.revenueChange, currency)}
+              </span>{" "}
+              vs previous period
+            </>
+          }
+        />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm text-muted-foreground">Total Revenue</p>
+        <MetricCard
+          label="Contribution"
+          value={formatCurrency(data.contribution, currency)}
+          detail={
+            <>
+              <span
+                className={
+                  contributionImproved
+                    ? "font-medium text-foreground"
+                    : "font-medium text-destructive"
+                }
+              >
+                {contributionImproved ? "+" : ""}
+                {formatCurrency(data.contributionChange, currency)}
+              </span>{" "}
+              vs previous period
+            </>
+          }
+        />
 
-          <p className="mt-2 text-2xl font-semibold">
-            {analysis.totals.totalRevenue.toLocaleString()} {business.currency}
-          </p>
-        </div>
+        <MetricCard
+          label="Contribution Margin"
+          value={formatPercent(data.contributionMargin)}
+          detail={
+            <>
+              <span
+                className={
+                  marginImproved
+                    ? "font-medium text-foreground"
+                    : "font-medium text-destructive"
+                }
+              >
+                {marginImproved ? "+" : ""}
+                {formatPercent(data.marginChange)}
+              </span>{" "}
+              vs previous period
+            </>
+          }
+        />
 
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm text-muted-foreground">Total Contribution</p>
+        <MetricCard
+          label="Products Sold"
+          value={formatNumber(data.products.length)}
+          detail="Products with revenue in this period"
+        />
+      </div>
 
-          <p className="mt-2 text-2xl font-semibold">
-            {analysis.totals.totalContribution.toLocaleString()}{" "}
-            {business.currency}
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm text-muted-foreground">Profitable Products</p>
-
-          <p className="mt-2 text-2xl font-semibold">
-            {analysis.totals.profitableProducts}
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm text-muted-foreground">Loss-Making Products</p>
-
-          <p className="mt-2 text-2xl font-semibold">
-            {analysis.totals.lossMakingProducts}
-          </p>
-        </div>
-      </section>
-
-      {/* Key Products */}
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        {analysis.mostProfitableProduct && (
-          <div className="rounded-xl border bg-background p-6">
-            <p className="text-sm text-muted-foreground">
-              Most Profitable Product
-            </p>
-
-            <Link
-              href={`/products/${analysis.mostProfitableProduct.productId}`}
-              className="mt-2 block text-xl font-semibold hover:underline"
-            >
-              {analysis.mostProfitableProduct.productName}
-            </Link>
-
-            <p className="mt-2 text-sm text-muted-foreground">Contribution</p>
-
-            <p className="mt-1 text-2xl font-semibold">
-              {analysis.mostProfitableProduct.contribution.toLocaleString()}{" "}
-              {business.currency}
-            </p>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              {analysis.mostProfitableProduct.contributionMargin.toFixed(1)}%
-              contribution margin
-            </p>
-          </div>
-        )}
-
-        {analysis.biggestLossProduct && (
-          <div className="rounded-xl border bg-background p-6">
-            <p className="text-sm text-muted-foreground">Biggest Loss</p>
-
-            <Link
-              href={`/products/${analysis.biggestLossProduct.productId}`}
-              className="mt-2 block text-xl font-semibold hover:underline"
-            >
-              {analysis.biggestLossProduct.productName}
-            </Link>
-
-            <p className="mt-2 text-sm text-muted-foreground">Contribution</p>
-
-            <p className="mt-1 text-2xl font-semibold">
-              {analysis.biggestLossProduct.contribution.toLocaleString()}{" "}
-              {business.currency}
-            </p>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              {analysis.biggestLossProduct.contributionMargin.toFixed(1)}%
-              contribution margin
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Ranking */}
-
-      <section className="rounded-xl border bg-background">
+      {/* Overview */}
+      <section className="rounded-xl border bg-card">
         <div className="border-b p-5">
-          <h2 className="font-semibold">Profitability Ranking</h2>
+          <h2 className="text-lg font-semibold">Profitability Overview</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Products ranked by contribution.
+            Revenue retained after product-level contribution costs.
           </p>
         </div>
 
-        <div className="divide-y">
-          {analysis.products.map((product, index) => {
-            const isLossMaking = product.contribution < 0;
+        <div className="grid gap-6 p-5 md:grid-cols-3">
+          <OverviewItem
+            label="Revenue"
+            value={formatCurrency(data.revenue, currency)}
+          />
 
-            return (
-              <div
-                key={product.productId}
-                className="grid gap-4 p-5 sm:grid-cols-5"
-              >
-                <div>
-                  <p className="text-xs text-muted-foreground">#{index + 1}</p>
+          <OverviewItem
+            label="Contribution"
+            value={formatCurrency(data.contribution, currency)}
+          />
 
-                  <Link
-                    href={`/products/${product.productId}`}
-                    className="font-medium hover:underline"
-                  >
-                    {product.productName}
-                  </Link>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Revenue</p>
-
-                  <p className="mt-1 font-medium">
-                    {product.netRevenue.toLocaleString()} {business.currency}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Contribution</p>
-
-                  <p
-                    className={`mt-1 font-medium ${
-                      isLossMaking ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {product.contribution.toLocaleString()} {business.currency}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Margin</p>
-
-                  <p className="mt-1 font-medium">
-                    {product.contributionMargin.toFixed(1)}%
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-
-                  <p
-                    className={`mt-1 font-medium ${
-                      isLossMaking ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {isLossMaking ? "Loss-making" : "Profitable"}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-
-          {analysis.products.length === 0 && (
-            <div className="p-8 text-center">
-              <p className="font-medium">No sales data yet</p>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Profitability will appear once products have sales.
-              </p>
-            </div>
-          )}
+          <OverviewItem
+            label="Contribution Margin"
+            value={formatPercent(data.contributionMargin)}
+          />
         </div>
       </section>
-    </main>
+
+      {/* Product profitability */}
+      <section className="rounded-xl border bg-card">
+        <div className="border-b p-5">
+          <h2 className="text-lg font-semibold">Product Profitability</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Products are ranked by contribution generated during the selected
+            period.
+          </p>
+        </div>
+
+        {data.products.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="font-medium">No profitability data yet</p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Record sales to start evaluating product profitability.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="px-5 py-3 font-medium">Product</th>
+
+                  <th className="px-5 py-3 text-right font-medium">Revenue</th>
+
+                  <th className="px-5 py-3 text-right font-medium">
+                    True Cost / Unit
+                  </th>
+
+                  <th className="px-5 py-3 text-right font-medium">
+                    Contribution
+                  </th>
+
+                  <th className="px-5 py-3 text-right font-medium">Margin</th>
+
+                  <th className="px-5 py-3 text-right font-medium">Target</th>
+
+                  <th className="px-5 py-3 text-right font-medium">Gap</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y">
+                {data.products.map((product) => {
+                  const lossMaking = product.contribution < 0;
+
+                  const marginBelowTarget =
+                    product.contributionMargin < product.targetMargin;
+
+                  return (
+                    <tr
+                      key={product.productId}
+                      className="transition hover:bg-muted/40"
+                    >
+                      <td className="px-5 py-4">
+                        <Link
+                          href={`/products/${product.productId}`}
+                          className="font-medium hover:underline"
+                        >
+                          {product.productName}
+                        </Link>
+                      </td>
+
+                      <td className="px-5 py-4 text-right">
+                        {formatCurrency(product.netRevenue, currency)}
+                      </td>
+
+                      <td className="px-5 py-4 text-right">
+                        {formatCurrency(product.trueUnitCost, currency)}
+                      </td>
+
+                      <td
+                        className={`px-5 py-4 text-right font-medium ${
+                          lossMaking ? "text-destructive" : ""
+                        }`}
+                      >
+                        {formatCurrency(product.contribution, currency)}
+                      </td>
+
+                      <td
+                        className={`px-5 py-4 text-right font-medium ${
+                          marginBelowTarget ? "text-destructive" : ""
+                        }`}
+                      >
+                        {formatPercent(product.contributionMargin)}
+                      </td>
+
+                      <td className="px-5 py-4 text-right text-muted-foreground">
+                        {formatPercent(product.targetMargin)}
+                      </td>
+
+                      <td
+                        className={`px-5 py-4 text-right font-medium ${
+                          marginBelowTarget ? "text-destructive" : ""
+                        }`}
+                      >
+                        {product.marginGap >= 0 ? "+" : ""}
+                        {formatPercent(product.marginGap)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Best performer */}
+      {bestProduct && (
+        <section className="rounded-xl border bg-card p-5">
+          <p className="text-sm font-medium">Top contributor</p>
+
+          <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <Link
+                href={`/products/${bestProduct.productId}`}
+                className="text-lg font-semibold hover:underline"
+              >
+                {bestProduct.productName}
+              </Link>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Generated {formatCurrency(bestProduct.contribution, currency)}{" "}
+                in contribution at a{" "}
+                {formatPercent(bestProduct.contributionMargin)} margin.
+              </p>
+            </div>
+
+            <div className="text-left md:text-right">
+              <p className="text-2xl font-semibold">
+                {formatCurrency(bestProduct.contribution, currency)}
+              </p>
+
+              <p className="text-xs text-muted-foreground">Contribution</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Loss-making products */}
+      {attentionProducts.length > 0 && (
+        <section className="rounded-xl border bg-muted/30 p-5">
+          <p className="text-sm font-medium">Profitability attention</p>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            {attentionProducts.length}{" "}
+            {attentionProducts.length === 1 ? "product is" : "products are"}{" "}
+            currently generating negative contribution. Review their purchase
+            costs, selling prices, and selling costs.
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <p className="text-sm text-muted-foreground">{label}</p>
+
+      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function OverviewItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
   );
 }

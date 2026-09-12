@@ -122,5 +122,96 @@ export async function getSaleItems(businessId: string) {
     return [];
   }
 
-  return data;
+  return data.map((item) => ({
+    ...item,
+    sale: Array.isArray(item.sale) ? (item.sale[0] ?? null) : item.sale,
+  }));
+}
+
+export type CreateSaleItemInput = {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+};
+
+export type CreateSaleInput = {
+  saleDate: string;
+  reference?: string;
+  shippingRevenue: number;
+  deliveryCost: number;
+  paymentFee: number;
+  notes?: string;
+  items: CreateSaleItemInput[];
+};
+
+export async function createSale(businessId: string, input: CreateSaleInput) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("create_sale", {
+    p_business_id: businessId,
+    p_sale_date: input.saleDate,
+    p_reference: input.reference ?? null,
+    p_shipping_revenue: input.shippingRevenue,
+    p_delivery_cost: input.deliveryCost,
+    p_payment_fee: input.paymentFee,
+    p_notes: input.notes ?? null,
+    p_items: input.items,
+  });
+
+  if (error) {
+    console.error("Failed to create sale:", error);
+    throw new Error(error.message);
+  }
+
+  return data as string;
+}
+
+export async function getSalesForReturn(businessId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("sales")
+    .select(
+      `
+        id,
+        sale_date,
+        reference,
+        sale_items(
+          id,
+          product_id,
+          quantity,
+          unit_price,
+          discount,
+          total_price,
+          product:products(
+            id,
+            name,
+            sku
+          )
+        )
+      `,
+    )
+    .eq("business_id", businessId)
+    .order("sale_date", {
+      ascending: false,
+    });
+
+  if (error) {
+    console.error("Failed to load sales for return:", error);
+
+    return [];
+  }
+
+  return data.map((sale) => ({
+    ...sale,
+
+    sale_items: sale.sale_items.map((item) => ({
+      ...item,
+
+      product: Array.isArray(item.product)
+        ? (item.product[0] ?? null)
+        : item.product,
+    })),
+  }));
 }

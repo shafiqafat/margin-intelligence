@@ -5,7 +5,7 @@ import { calculateProductNetRevenue } from "./calculateRevenue";
 import { calculateContribution } from "./calculateContribution";
 import { calculateContributionMargin } from "./calculateMargin";
 import { calculateTrueUnitCost } from "./calculateTrueCost";
-import { calculateProductTrueCost } from "./calculateTrueCost";
+import { calculateProductSellingCosts } from "./calculateProductSellingCosts";
 
 type Product = {
   id: string;
@@ -19,11 +19,20 @@ type PurchaseItem = {
   unit_cost: number;
 };
 
+type SaleContext = {
+  id: string;
+  delivery_cost: number;
+  payment_fee: number;
+};
+
 type SaleItem = {
+  sale_id: string;
   product_id: string;
   quantity: number;
   unit_price: number;
   discount: number;
+  total_price: number;
+  sale?: SaleContext | SaleContext[] | null;
 };
 
 type ReturnRecord = {
@@ -64,11 +73,8 @@ export function calculateProductProfitability({
   const productPurchaseItems = purchaseItems.filter(
     (item) => item.product_id === product.id,
   );
-  const productPurchases = purchaseItems.filter(
-    (item) => item.product_id === product.id,
-  );
 
-  const purchaseCost = productPurchases.reduce(
+  const purchaseCost = productPurchaseItems.reduce(
     (total, item) => total + item.quantity * item.unit_cost,
     0,
   );
@@ -99,18 +105,20 @@ export function calculateProductProfitability({
     purchaseItems,
     allocations,
   );
-  const trueCostDetails = calculateProductTrueCost(
-    product.id,
-    purchaseItems,
-    allocations,
-  );
+
+  const allocatedDirectCosts = allocations
+    .filter((allocation) => allocation.product_id === product.id)
+    .reduce((total, allocation) => total + allocation.amount, 0);
+
+  const sellingCosts = calculateProductSellingCosts(product.id, saleItems);
 
   const contribution = calculateContribution({
     netRevenue,
-    trueUnitCost,
+    weightedAverageUnitCost,
     netUnitsSold,
-    directExpenses: productDirectExpenses,
+    directCosts: productDirectExpenses,
     returnCosts,
+    sellingCosts,
   });
 
   const contributionMargin = calculateContributionMargin(
@@ -130,15 +138,16 @@ export function calculateProductProfitability({
 
     weightedAverageUnitCost,
 
+    allocatedDirectCosts,
     directExpenses: productDirectExpenses,
     returnCosts,
-    purchaseCost,
-    targetMargin,
-    marginGap,
+    sellingCosts,
 
+    purchaseCost,
     trueUnitCost,
 
-    allocatedDirectCosts: trueCostDetails.allocatedDirectCosts,
+    targetMargin,
+    marginGap,
 
     netRevenue,
     contribution,

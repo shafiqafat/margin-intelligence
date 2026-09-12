@@ -1,21 +1,24 @@
 type ContributionInput = {
   netRevenue: number;
-  trueUnitCost: number;
+  weightedAverageUnitCost: number;
   netUnitsSold: number;
-  directExpenses: number;
+  directCosts: number;
   returnCosts: number;
+  sellingCosts?: number;
 };
 
 export function calculateContribution({
   netRevenue,
-  trueUnitCost,
+  weightedAverageUnitCost,
   netUnitsSold,
-  directExpenses,
+  directCosts,
   returnCosts,
+  sellingCosts = 0,
 }: ContributionInput) {
-  const costOfUnitsSold = trueUnitCost * netUnitsSold;
+  const acquisitionCost = weightedAverageUnitCost * netUnitsSold;
 
-  const totalProductCost = costOfUnitsSold + directExpenses + returnCosts;
+  const totalProductCost =
+    acquisitionCost + directCosts + returnCosts + sellingCosts;
 
   return netRevenue - totalProductCost;
 }

@@ -46,12 +46,21 @@ export default async function SalesPage() {
             </p>
           </div>
 
-          <Link
-            href="/transactions/sales/new"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Record Sale
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/transactions/returns/new"
+              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Record Return
+            </Link>
+
+            <Link
+              href="/transactions/sales/new"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Create Sale
+            </Link>
+          </div>
         </div>
       </div>
 
