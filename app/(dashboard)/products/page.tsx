@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentBusiness } from "@/lib/services/business";
-import { getProducts } from "@/lib/services/products";
+import { getProductListData } from "@/lib/services/productList";
 
 export default async function ProductsPage() {
   const business = await getCurrentBusiness();
@@ -13,7 +13,7 @@ export default async function ProductsPage() {
     );
   }
 
-  const products = await getProducts(business.id);
+  const products = await getProductListData(business.id);
 
   return (
     <main className="space-y-6 p-8">
@@ -50,59 +50,134 @@ export default async function ProductsPage() {
                 </th>
 
                 <th className="px-4 py-3 text-right font-medium">
-                  Target Margin
+                  True Cost / Unit
                 </th>
 
-                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-right font-medium">Margin</th>
+
+                <th className="px-4 py-3 text-right font-medium">Target</th>
+
+                <th className="px-4 py-3 text-left font-medium">Health</th>
               </tr>
             </thead>
 
             <tbody className="divide-y">
-              {products.map((product) => (
-                <tr key={product.id} className="transition hover:bg-muted/30">
-                  <td className="px-4 py-4 font-medium">
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="transition hover:text-blue-600"
+              {products.map((product) => {
+                const profitability = product.profitability;
+
+                const hasRevenue =
+                  profitability !== null && profitability.netRevenue > 0;
+
+                const isNegativeMargin =
+                  hasRevenue && profitability.contributionMargin < 0;
+
+                const isBelowTarget =
+                  hasRevenue &&
+                  profitability.contributionMargin < product.target_margin;
+
+                return (
+                  <tr key={product.id} className="transition hover:bg-muted/30">
+                    {/* Product */}
+
+                    <td className="px-4 py-4 font-medium">
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="transition hover:text-blue-600"
+                      >
+                        {product.name}
+                      </Link>
+                    </td>
+
+                    {/* SKU */}
+
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {product.sku || "—"}
+                    </td>
+
+                    {/* Category */}
+
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {product.category || "—"}
+                    </td>
+
+                    {/* Selling Price */}
+
+                    <td className="px-4 py-4 text-right">
+                      {product.selling_price.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {business.currency}
+                    </td>
+
+                    {/* True Cost */}
+
+                    <td className="px-4 py-4 text-right">
+                      {profitability && profitability.trueUnitCost > 0
+                        ? profitability.trueUnitCost.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"}{" "}
+                      {profitability && profitability.trueUnitCost > 0
+                        ? business.currency
+                        : ""}
+                    </td>
+
+                    {/* Margin */}
+
+                    <td
+                      className={`px-4 py-4 text-right font-medium ${
+                        !hasRevenue
+                          ? "text-muted-foreground"
+                          : profitability.contributionMargin < 0
+                            ? "text-red-600"
+                            : profitability.contributionMargin <
+                                product.target_margin
+                              ? "text-amber-600"
+                              : "text-green-600"
+                      }`}
                     >
-                      {product.name}
-                    </Link>
-                  </td>
+                      {hasRevenue
+                        ? `${profitability.contributionMargin.toFixed(1)}%`
+                        : "—"}
+                    </td>
 
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {product.sku || "—"}
-                  </td>
+                    {/* Target */}
 
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {product.category || "—"}
-                  </td>
+                    <td className="px-4 py-4 text-right text-muted-foreground">
+                      {product.target_margin.toFixed(1)}%
+                    </td>
 
-                  <td className="px-4 py-4 text-right">
-                    {product.selling_price.toLocaleString()} {business.currency}
-                  </td>
+                    {/* Health */}
 
-                  <td className="px-4 py-4 text-right">
-                    {product.target_margin}%
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span
-                      className={
-                        product.status === "active"
-                          ? "rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700"
-                          : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                      }
-                    >
-                      {product.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-4 py-4">
+                      {!hasRevenue ? (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                          No sales
+                        </span>
+                      ) : isNegativeMargin ? (
+                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                          Loss-making
+                        </span>
+                      ) : isBelowTarget ? (
+                        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                          Needs attention
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                          Healthy
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
 
               {products.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-4 py-12 text-center text-sm text-muted-foreground"
                   >
                     No products found.

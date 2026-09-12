@@ -168,7 +168,8 @@ export default async function PurchaseDetailsPage({
             <h2 className="font-semibold">Cost Allocation</h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Shared purchase costs allocated across products.
+              Shows how shared purchase costs are added to each product&apos;s
+              acquisition cost.
             </p>
           </div>
 
@@ -180,18 +181,30 @@ export default async function PurchaseDetailsPage({
                     <th className="px-5 py-3 text-left font-medium">Product</th>
 
                     <th className="px-5 py-3 text-right font-medium">
-                      Allocated Cost
+                      Item Cost
                     </th>
 
-                    <th className="px-5 py-3 text-left font-medium">Method</th>
+                    <th className="px-5 py-3 text-right font-medium">
+                      Shared Cost
+                    </th>
+
+                    <th className="px-5 py-3 text-right font-medium">
+                      True Cost
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y">
                   {purchase.allocations.map((allocation) => {
-                    const product = purchase.items.find(
+                    const item = purchase.items.find(
                       (item) => item.product_id === allocation.product_id,
-                    )?.product;
+                    );
+
+                    const product = item?.product;
+
+                    const itemCost = item?.total_cost ?? 0;
+
+                    const trueCost = itemCost + allocation.amount;
 
                     return (
                       <tr key={allocation.id}>
@@ -200,12 +213,27 @@ export default async function PurchaseDetailsPage({
                         </td>
 
                         <td className="px-5 py-4 text-right">
-                          {allocation.amount.toLocaleString()}{" "}
+                          {itemCost.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
                           {business.currency}
                         </td>
 
-                        <td className="px-5 py-4 text-muted-foreground">
-                          {allocation.allocation_method}
+                        <td className="px-5 py-4 text-right">
+                          {allocation.amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          {business.currency}
+                        </td>
+
+                        <td className="px-5 py-4 text-right font-medium">
+                          {trueCost.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          {business.currency}
                         </td>
                       </tr>
                     );
@@ -253,7 +281,11 @@ export default async function PurchaseDetailsPage({
                 <span className="font-semibold">Total Cost</span>
 
                 <span className="font-semibold">
-                  {purchase.total_cost.toLocaleString()} {business.currency}
+                  {purchase.total_cost.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  {business.currency}
                 </span>
               </div>
             </div>

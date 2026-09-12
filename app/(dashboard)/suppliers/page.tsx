@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getCurrentBusiness } from "@/lib/services/business";
-import { getSuppliers } from "@/lib/services/suppliers";
+import { getSupplierListData } from "@/lib/services/supplierList";
 
 export default async function SuppliersPage() {
   const business = await getCurrentBusiness();
@@ -14,7 +14,7 @@ export default async function SuppliersPage() {
     );
   }
 
-  const suppliers = await getSuppliers(business.id);
+  const suppliers = await getSupplierListData(business.id);
 
   return (
     <main className="space-y-6 p-8">
@@ -42,19 +42,23 @@ export default async function SuppliersPage() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Supplier</th>
 
+                <th className="px-4 py-3 text-right font-medium">Products</th>
+
+                <th className="px-4 py-3 text-right font-medium">Purchases</th>
+
+                <th className="px-4 py-3 text-right font-medium">
+                  Total Spend
+                </th>
+
                 <th className="px-4 py-3 text-left font-medium">Contact</th>
-
-                <th className="px-4 py-3 text-left font-medium">Email</th>
-
-                <th className="px-4 py-3 text-left font-medium">Phone</th>
-
-                <th className="px-4 py-3 text-left font-medium">Added</th>
               </tr>
             </thead>
 
             <tbody className="divide-y">
               {suppliers.map((supplier) => (
                 <tr key={supplier.id} className="transition hover:bg-muted/30">
+                  {/* Supplier */}
+
                   <td className="px-4 py-4 font-medium">
                     <Link
                       href={`/suppliers/${supplier.id}`}
@@ -62,22 +66,40 @@ export default async function SuppliersPage() {
                     >
                       {supplier.name}
                     </Link>
+
+                    {supplier.contact_name && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {supplier.contact_name}
+                      </p>
+                    )}
                   </td>
 
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {supplier.contact_name || "—"}
+                  {/* Products */}
+
+                  <td className="px-4 py-4 text-right">
+                    {supplier.productCount}
                   </td>
 
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {supplier.email || "—"}
+                  {/* Purchases */}
+
+                  <td className="px-4 py-4 text-right">
+                    {supplier.purchaseCount}
                   </td>
 
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {supplier.phone || "—"}
+                  {/* Total Spend */}
+
+                  <td className="px-4 py-4 text-right font-medium">
+                    {supplier.totalSpend.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {business.currency}
                   </td>
 
+                  {/* Contact */}
+
                   <td className="px-4 py-4 text-muted-foreground">
-                    {new Date(supplier.created_at).toLocaleDateString()}
+                    {supplier.email || supplier.phone || "—"}
                   </td>
                 </tr>
               ))}

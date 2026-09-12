@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getCurrentBusiness } from "@/lib/services/business";
-import { getPurchases } from "@/lib/services/purchases";
+import { getPurchaseListData } from "@/lib/services/purchaseList";
 
 export default async function PurchasesPage() {
   const business = await getCurrentBusiness();
@@ -14,7 +14,7 @@ export default async function PurchasesPage() {
     );
   }
 
-  const purchases = await getPurchases(business.id);
+  const purchases = await getPurchaseListData(business.id);
 
   return (
     <main className="space-y-6 p-8">
@@ -46,7 +46,13 @@ export default async function PurchasesPage() {
 
                 <th className="px-5 py-3 text-left font-medium">Reference</th>
 
+                <th className="px-5 py-3 text-right font-medium">Items</th>
+
                 <th className="px-5 py-3 text-right font-medium">Subtotal</th>
+
+                <th className="px-5 py-3 text-right font-medium">
+                  Extra Costs
+                </th>
 
                 <th className="px-5 py-3 text-right font-medium">Total Cost</th>
               </tr>
@@ -56,7 +62,9 @@ export default async function PurchasesPage() {
               {purchases.map((purchase) => (
                 <tr key={purchase.id} className="transition hover:bg-muted/30">
                   <td className="px-5 py-4">
-                    {new Date(purchase.purchase_date).toLocaleDateString()}
+                    {new Date(
+                      `${purchase.purchase_date}T00:00:00`,
+                    ).toLocaleDateString()}
                   </td>
 
                   <td className="px-5 py-4 font-medium">
@@ -72,12 +80,30 @@ export default async function PurchasesPage() {
                     {purchase.reference || "—"}
                   </td>
 
+                  <td className="px-5 py-4 text-right">{purchase.itemCount}</td>
+
                   <td className="px-5 py-4 text-right">
-                    {purchase.subtotal.toLocaleString()} {business.currency}
+                    {purchase.subtotal.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {business.currency}
+                  </td>
+
+                  <td className="px-5 py-4 text-right">
+                    {purchase.extraCosts.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {business.currency}
                   </td>
 
                   <td className="px-5 py-4 text-right font-medium">
-                    {purchase.total_cost.toLocaleString()} {business.currency}
+                    {purchase.total_cost.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {business.currency}
                   </td>
                 </tr>
               ))}
@@ -85,7 +111,7 @@ export default async function PurchasesPage() {
               {purchases.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={7}
                     className="px-5 py-12 text-center text-sm text-muted-foreground"
                   >
                     No purchases recorded yet.

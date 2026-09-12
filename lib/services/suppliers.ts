@@ -106,3 +106,47 @@ export async function getSupplierProducts(
     };
   });
 }
+export async function getProductSuppliers(
+  businessId: string,
+  productId: string,
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("product_suppliers")
+    .select(
+      `
+        id,
+        is_primary,
+        supplier:suppliers!inner(
+          id,
+          name,
+          contact_name,
+          email,
+          phone
+        )
+      `,
+    )
+    .eq("product_id", productId)
+    .eq("supplier.business_id", businessId)
+    .order("is_primary", {
+      ascending: false,
+    });
+
+  if (error) {
+    console.error("Failed to load product suppliers:", error);
+    return [];
+  }
+
+  return data.map((relationship) => {
+    const supplier = Array.isArray(relationship.supplier)
+      ? relationship.supplier[0]
+      : relationship.supplier;
+
+    return {
+      id: relationship.id,
+      is_primary: relationship.is_primary,
+      supplier,
+    };
+  });
+}

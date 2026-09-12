@@ -43,6 +43,44 @@ export async function getGeneratedInsights(businessId: string) {
   );
 }
 
+export async function getProductInsights(
+  businessId: string,
+  productId: string,
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("insights")
+    .select(
+      `
+        id,
+        type,
+        severity,
+        title,
+        description,
+        financial_impact,
+        what_happened,
+        why_it_matters,
+        what_to_investigate,
+        status,
+        detected_at
+      `,
+    )
+    .eq("business_id", businessId)
+    .eq("entity_type", "product")
+    .eq("entity_id", productId)
+    .in("status", ["new", "viewed", "investigating", "action_taken"])
+    .order("severity", { ascending: true })
+    .order("detected_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load product insights:", error);
+    return [];
+  }
+
+  return data;
+}
+
 export async function syncInsights(businessId: string) {
   const supabase = await createClient();
 

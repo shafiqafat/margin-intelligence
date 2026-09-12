@@ -3,8 +3,10 @@ import Link from "next/link";
 import { getCurrentBusiness } from "@/lib/services/business";
 import { getProductById } from "@/lib/services/products";
 import { getProductProfitability } from "@/lib/services/profitability";
+import { getProductSuppliers } from "@/lib/services/suppliers";
 
 import { DeactivateProductButton } from "@/components/products/DeactivateProductButton";
+import { getProductInsights, syncInsights } from "@/lib/services/intelligence";
 
 export default async function ProductPage({
   params,
@@ -44,7 +46,10 @@ export default async function ProductPage({
     );
   }
 
-  const profitability = await getProductProfitability(business.id, id);
+  const [profitability, suppliers] = await Promise.all([
+    getProductProfitability(business.id, id),
+    getProductSuppliers(business.id, id),
+  ]);
 
   if (!profitability) {
     return (
@@ -59,6 +64,10 @@ export default async function ProductPage({
       </main>
     );
   }
+
+  await syncInsights(business.id);
+
+  const insights = await getProductInsights(business.id, id);
 
   return (
     <main className="space-y-8 p-8">
@@ -141,7 +150,11 @@ export default async function ProductPage({
           <p className="text-sm text-muted-foreground">Contribution</p>
 
           <p className="mt-2 text-2xl font-semibold">
-            {profitability.contribution.toLocaleString()} {business.currency}
+            {profitability.contribution.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            {business.currency}
           </p>
         </div>
 
@@ -155,6 +168,164 @@ export default async function ProductPage({
           <p className="mt-1 text-xs text-muted-foreground">
             Target: {product.target_margin}%
           </p>
+        </div>
+      </section>
+
+      {/* Margin Health */}
+
+      <section className="rounded-xl border bg-background">
+        <div className="border-b p-5">
+          <h2 className="font-semibold">Margin Health</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Understand how this product is performing against its target.
+          </p>
+        </div>
+
+        <div className="space-y-6 p-5">
+          {/* Margin comparison */}
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Actual margin</p>
+
+              <p className="mt-2 text-3xl font-semibold">
+                {profitability.contributionMargin.toFixed(1)}%
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">Target margin</p>
+
+              <p className="mt-2 text-3xl font-semibold">
+                {product.target_margin.toFixed(1)}%
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">Margin gap</p>
+
+              <p
+                className={`mt-2 text-3xl font-semibold ${
+                  profitability.contributionMargin < product.target_margin
+                    ? "text-amber-600"
+                    : "text-green-600"
+                }`}
+              >
+                {profitability.contributionMargin >= product.target_margin
+                  ? "+"
+                  : ""}
+                {(
+                  profitability.contributionMargin - product.target_margin
+                ).toFixed(1)}
+                pts
+              </p>
+            </div>
+          </div>
+
+          {/* Health status */}
+
+          {profitability.contributionMargin < product.target_margin ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="font-medium text-amber-900">
+                Margin is below target
+              </p>
+
+              <p className="mt-1 text-sm text-amber-800">
+                This product is currently performing{" "}
+                {(
+                  product.target_margin - profitability.contributionMargin
+                ).toFixed(1)}{" "}
+                percentage points below its target.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <p className="font-medium text-green-900">
+                Margin is meeting target
+              </p>
+
+              <p className="mt-1 text-sm text-green-800">
+                This product is currently meeting or exceeding its target
+                contribution margin.
+              </p>
+            </div>
+          )}
+
+          {/* Intelligence */}
+
+          {insights.length > 0 && (
+            <div className="space-y-6">
+              {insights.slice(0, 1).map((insight) => (
+                <div key={insight.id} className="space-y-5">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Primary issue
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold">
+                      {insight.title}
+                    </h3>
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    {insight.why_it_matters && (
+                      <div className="rounded-lg border p-4">
+                        <p className="text-sm font-medium">Why it matters</p>
+
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {insight.why_it_matters}
+                        </p>
+                      </div>
+                    )}
+
+                    {insight.what_to_investigate && (
+                      <div className="rounded-lg border p-4">
+                        <p className="text-sm font-medium">
+                          What to investigate
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {insight.what_to_investigate}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {insight.financial_impact !== null &&
+                    insight.financial_impact !== 0 && (
+                      <div className="rounded-lg border p-4">
+                        <p className="text-sm font-medium">
+                          Estimated financial impact
+                        </p>
+
+                        <p className="mt-2 text-xl font-semibold">
+                          {Math.abs(insight.financial_impact).toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            },
+                          )}{" "}
+                          {business.currency}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Estimated impact associated with this detected issue.
+                        </p>
+                      </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {insights.length === 0 &&
+            profitability.contributionMargin >= product.target_margin && (
+              <p className="text-sm text-muted-foreground">
+                No active margin issues detected for this product.
+              </p>
+            )}
         </div>
       </section>
 
@@ -183,11 +354,14 @@ export default async function ProductPage({
 
           <div className="flex items-center justify-between p-5">
             <span className="text-sm text-muted-foreground">
-              Product direct costs
+              Direct expenses
             </span>
 
             <span className="font-medium">
-              {profitability.directExpenses.toLocaleString()}{" "}
+              {profitability.directExpenses.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
               {business.currency}
             </span>
           </div>
@@ -196,7 +370,11 @@ export default async function ProductPage({
             <span className="text-sm text-muted-foreground">Return costs</span>
 
             <span className="font-medium">
-              {profitability.returnCosts.toLocaleString()} {business.currency}
+              {profitability.returnCosts.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
+              {business.currency}
             </span>
           </div>
 
@@ -238,6 +416,74 @@ export default async function ProductPage({
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Suppliers */}
+
+      <section className="rounded-xl border bg-background">
+        <div className="border-b p-5">
+          <h2 className="font-semibold">Suppliers</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Suppliers associated with this product.
+          </p>
+        </div>
+
+        {suppliers.length === 0 ? (
+          <div className="p-5">
+            <p className="text-sm text-muted-foreground">
+              No suppliers have been linked to this product yet.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {suppliers.map(({ id, is_primary, supplier }) => {
+              if (!supplier) return null;
+
+              return (
+                <div
+                  key={id}
+                  className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/suppliers/${supplier.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {supplier.name}
+                      </Link>
+
+                      {is_primary && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+
+                    {supplier.contact_name && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {supplier.contact_name}
+                      </p>
+                    )}
+
+                    {supplier.email && (
+                      <p className="text-sm text-muted-foreground">
+                        {supplier.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {supplier.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      {supplier.phone}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );
