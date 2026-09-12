@@ -44,7 +44,7 @@ export function detectLowMarginProduct(
     )}%, which is ${marginGap.toFixed(
       1,
     )} percentage points below the ${product.targetMargin.toFixed(1)}% target.`,
-    financialImpact: Math.max(0, product.netRevenue * (marginGap / 100)),
+    financialImpact: -(product.netRevenue * (marginGap / 100)),
     marginGap,
   };
 }

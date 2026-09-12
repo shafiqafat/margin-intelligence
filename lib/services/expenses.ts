@@ -12,7 +12,11 @@ export async function getExpenses(businessId: string) {
         product_id,
         description,
         amount,
-        expense_date
+        expense_date,
+        category:cost_categories(
+          name,
+          type
+        )
       `,
     )
     .eq("business_id", businessId)
@@ -23,5 +27,10 @@ export async function getExpenses(businessId: string) {
     return [];
   }
 
-  return data;
+  return data.map((expense) => ({
+    ...expense,
+    category: Array.isArray(expense.category)
+      ? (expense.category[0] ?? null)
+      : expense.category,
+  }));
 }

@@ -4,7 +4,18 @@ export type InsightExplanation = {
   whatHappened: string;
   whyItMatters: string;
   whatToInvestigate: string;
+
+  primaryDriver?: InsightDriver;
+  driverReason?: string;
 };
+
+export type InsightDriver =
+  | "purchase_cost"
+  | "direct_costs"
+  | "returns"
+  | "selling_price"
+  | "multiple_factors"
+  | "insufficient_data";
 
 export type BaseInsightFinding = {
   type: string;

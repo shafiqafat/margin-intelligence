@@ -55,18 +55,47 @@ function buildLowMarginExplanation(
   finding: InsightFinding,
   related: InsightFinding[],
 ): InsightExplanation {
+  const primaryDriver =
+    "primaryDriver" in finding && typeof finding.primaryDriver === "string"
+      ? finding.primaryDriver
+      : null;
+
+  const driverReason =
+    "driverReason" in finding && typeof finding.driverReason === "string"
+      ? finding.driverReason
+      : null;
+
+  const driverLabels: Record<string, string> = {
+    purchase_cost: "Purchase cost",
+    direct_costs: "Direct costs",
+    returns: "Return costs",
+    selling_price: "Selling price / unit economics",
+    multiple_factors: "Multiple factors",
+    insufficient_data: "Insufficient data",
+  };
+
+  const driverLabel = primaryDriver
+    ? (driverLabels[primaryDriver] ?? primaryDriver)
+    : null;
+
   return {
     whatHappened: finding.description,
 
     whyItMatters:
-      related.length > 0
+      driverReason ??
+      (related.length > 0
         ? `Other signals were also detected for this product: ${related
             .map((item) => item.title)
             .join("; ")}.`
-        : "The product is generating less contribution than its target margin.",
+        : "The product is generating less contribution than its target margin."),
 
-    whatToInvestigate:
-      "Review purchase costs, direct costs, selling price, and recent returns.",
+    whatToInvestigate: driverLabel
+      ? `Primary area to investigate: ${driverLabel}. Review the related financial activity before making pricing or supplier changes.`
+      : "Review purchase costs, direct costs, selling price, and recent returns.",
+
+    primaryDriver: primaryDriver as InsightExplanation["primaryDriver"],
+
+    driverReason: driverReason ?? undefined,
   };
 }
 

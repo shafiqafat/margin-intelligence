@@ -7,45 +7,38 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const costMovements = [
-  {
-    name: "Purchase costs",
-    amount: 420,
-    description: "Supplier prices increased",
-    percentage: 52.6,
-    icon: CircleDollarSign,
-  },
-  {
-    name: "Delivery",
-    amount: 180,
-    description: "Higher delivery costs",
-    percentage: 22.6,
-    icon: Truck,
-  },
-  {
-    name: "Returns",
-    amount: 95,
-    description: "Return-related costs",
-    percentage: 11.9,
-    icon: RotateCcw,
-  },
-  {
-    name: "Payment fees",
-    amount: 72,
-    description: "More payment processing fees",
-    percentage: 9,
-    icon: CreditCard,
-  },
-  {
-    name: "Packaging",
-    amount: 31,
-    description: "Packaging costs increased",
-    percentage: 3.9,
-    icon: Package,
-  },
-];
+type CostMovementItem = {
+  name: string;
+  category:
+    | "purchase_costs"
+    | "delivery"
+    | "returns"
+    | "payment_fees"
+    | "packaging";
+  amount: number;
+  description: string;
+  percentage: number;
+};
 
-export function CostMovement() {
+type CostMovementProps = {
+  movements: CostMovementItem[];
+  currency: string;
+};
+const iconMap = {
+  purchase_costs: CircleDollarSign,
+  delivery: Truck,
+  returns: RotateCcw,
+  payment_fees: CreditCard,
+  packaging: Package,
+};
+
+export function CostMovement({ movements, currency }: CostMovementProps) {
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(Math.abs(value));
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm">
       {/* Header */}
@@ -67,8 +60,8 @@ export function CostMovement() {
 
       {/* Cost items */}
       <div className="space-y-5">
-        {costMovements.map((item) => {
-          const Icon = item.icon;
+        {movements.map((item) => {
+          const Icon = iconMap[item.category];
 
           return (
             <div key={item.name} className="group">
@@ -80,8 +73,13 @@ export function CostMovement() {
                   <p className="truncate text-sm font-medium">{item.name}</p>
                 </div>
 
-                <p className="shrink-0 text-sm font-semibold">
-                  +${item.amount}
+                <p
+                  className={`shrink-0 text-sm font-semibold ${
+                    item.amount >= 0 ? "text-foreground" : "text-emerald-600"
+                  }`}
+                >
+                  {item.amount >= 0 ? "+" : "-"}
+                  {formatMoney(item.amount)}
                 </p>
               </div>
 
@@ -102,7 +100,9 @@ export function CostMovement() {
                 </div>
 
                 <span className="w-20 shrink-0 text-right text-[10px] font-medium text-muted-foreground">
-                  {item.percentage}% of increase
+                  {item.amount > 0
+                    ? `${item.percentage.toFixed(1)}% of increase`
+                    : "Cost decreased"}
                 </span>
               </div>
             </div>

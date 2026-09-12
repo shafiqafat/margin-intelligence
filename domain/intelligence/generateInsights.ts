@@ -5,14 +5,30 @@ import { detectSupplierOpportunity } from "./detectSupplierOpportunity";
 import type { InsightFinding } from "@/types/intelligence";
 import { detectSupplierIssue } from "./detectSupplierIssue";
 import { generateInsightExplanation } from "./generateInsightExplanation";
+import { analyzeInsightCause } from "./analyzeInsightCause";
 
 type ProductMargin = {
   productId: string;
   productName: string;
+
   netRevenue: number;
+  netUnitsSold: number;
+
   contribution: number;
   contributionMargin: number;
+
   targetMargin: number;
+  marginGap: number;
+
+  purchaseCost: number;
+  weightedAverageUnitCost: number;
+
+  allocatedDirectCosts: number;
+  directExpenses: number;
+
+  returnCosts: number;
+
+  trueUnitCost: number;
 };
 
 type PurchaseRecord = {
@@ -51,7 +67,31 @@ type IntelligenceRule = (
  * Low margin rule
  */
 const lowMarginRule: IntelligenceRule = (product) => {
-  return detectLowMarginProduct(product);
+  const finding = detectLowMarginProduct(product);
+
+  if (!finding) {
+    return null;
+  }
+
+  const cause = analyzeInsightCause({
+    netRevenue: product.netRevenue,
+    netUnitsSold: product.netUnitsSold,
+    purchaseCost: product.purchaseCost,
+    allocatedDirectCosts: product.allocatedDirectCosts,
+    directExpenses: product.directExpenses,
+    returnCosts: product.returnCosts,
+    trueUnitCost: product.trueUnitCost,
+    contribution: product.contribution,
+    contributionMargin: product.contributionMargin,
+    targetMargin: product.targetMargin,
+    marginGap: product.marginGap,
+  });
+
+  return {
+    ...finding,
+    primaryDriver: cause.primaryDriver,
+    driverReason: cause.reason,
+  };
 };
 
 /**

@@ -11,15 +11,6 @@ import {
   YAxis,
 } from "recharts";
 
-const data = [
-  { week: "Week 1", margin: 34.2 },
-  { week: "Week 2", margin: 36.8 },
-  { week: "Week 3", margin: 35.1 },
-  { week: "Week 4", margin: 38.4 },
-];
-
-const targetMargin = 42;
-
 function CustomTooltip({
   active,
   payload,
@@ -47,7 +38,22 @@ function CustomTooltip({
   );
 }
 
-export function MarginTrendChart() {
+type MarginTrendPoint = {
+  week: string;
+  margin: number;
+  revenue: number;
+  contribution: number;
+};
+
+type MarginTrendChartProps = {
+  data: MarginTrendPoint[];
+  targetMargin: number;
+};
+
+export function MarginTrendChart({
+  data,
+  targetMargin,
+}: MarginTrendChartProps) {
   const currentMargin = data[data.length - 1].margin;
 
   return (

@@ -1,58 +1,21 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Boxes } from "lucide-react";
+import { ArrowRight, Boxes } from "lucide-react";
 
-const products = [
-  {
-    name: "Canvas Bag",
-    sku: "CB-001",
-    revenue: 1850,
-    trueCost: 948,
-    contribution: 902,
-    margin: 48.8,
-    change: 2.1,
-    trend: "up",
-  },
-  {
-    name: "Black T-Shirt",
-    sku: "BT-002",
-    revenue: 2340,
-    trueCost: 1435,
-    contribution: 905,
-    margin: 38.7,
-    change: -4.5,
-    trend: "down",
-  },
-  {
-    name: "Classic Dress",
-    sku: "CD-003",
-    revenue: 1620,
-    trueCost: 1050,
-    contribution: 570,
-    margin: 35.2,
-    change: 1.4,
-    trend: "up",
-  },
-  {
-    name: "Premium Hoodie",
-    sku: "PH-004",
-    revenue: 1820,
-    trueCost: 1430,
-    contribution: 390,
-    margin: 21.4,
-    change: -8.2,
-    trend: "down",
-  },
-  {
-    name: "Classic Watch",
-    sku: "CW-005",
-    revenue: 790,
-    trueCost: 666,
-    contribution: 124,
-    margin: 15.7,
-    change: -6.1,
-    trend: "down",
-  },
-];
+type ProductPerformanceItem = {
+  productId: string;
+  productName: string;
+  sku: string | null;
+  netRevenue: number;
+  trueUnitCost: number;
+  netUnitsSold: number;
+  contribution: number;
+  contributionMargin: number;
+};
+
+type ProductPerformanceProps = {
+  products: ProductPerformanceItem[];
+  currency: string;
+};
 
 function getMarginStatus(margin: number) {
   if (margin >= 40) {
@@ -78,7 +41,21 @@ function getMarginStatus(margin: number) {
   };
 }
 
-export function ProductPerformance() {
+export function ProductPerformance({
+  products,
+  currency,
+}: ProductPerformanceProps) {
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const sortedProducts = [...products].sort(
+    (a, b) => b.contribution - a.contribution,
+  );
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
       {/* Header */}
@@ -143,40 +120,42 @@ export function ProductPerformance() {
           </thead>
 
           <tbody>
-            {products.map((product) => {
-              const marginStatus = getMarginStatus(product.margin);
-              const isPositive = product.trend === "up";
+            {sortedProducts.map((product) => {
+              const marginStatus = getMarginStatus(product.contributionMargin);
+
+              const trueCost = product.trueUnitCost * product.netUnitsSold;
 
               return (
-                
                 <tr
-                  key={product.sku}
+                  key={product.productId}
                   className={`group border-b last:border-0 transition-colors duration-150 hover:bg-primary/[0.035] ${marginStatus.rowClass}`}
                 >
-                  
                   <td className="px-5 py-3.5">
-                    <Link href={`/products/${product.sku}`} className="block">
+                    <Link
+                      href={`/products/${product.productId}`}
+                      className="block"
+                    >
                       <p className="text-sm font-semibold transition-colors group-hover:text-primary">
-                        {product.name}
+                        {product.productName}
                       </p>
 
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {product.sku}
+                        {product.sku ?? "No SKU"}
                       </p>
                     </Link>
                   </td>
 
                   <td className="px-4 py-3.5 text-right text-sm">
-                    ${product.revenue.toLocaleString()}
+                    {formatMoney(product.netRevenue)}
                   </td>
 
                   <td className="px-4 py-3.5 text-right text-sm text-muted-foreground">
-                    ${product.trueCost.toLocaleString()}
+                    {formatMoney(trueCost)}
                   </td>
 
                   <td className="px-4 py-3.5 text-right">
                     <p className="text-sm font-semibold">
-                      ${product.contribution.toLocaleString()}
+                      {formatMoney(product.contribution)}
                     </p>
                   </td>
 
@@ -189,23 +168,14 @@ export function ProductPerformance() {
                       </span>
 
                       <span className="text-sm font-semibold">
-                        {product.margin.toFixed(1)}%
+                        {product.contributionMargin.toFixed(1)}%
                       </span>
                     </div>
                   </td>
 
                   <td className="px-5 py-3.5 text-right">
-                    <div
-                      className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                        isPositive ? "text-emerald-600" : "text-destructive"
-                      }`}
-                    >
-                      {isPositive ? (
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                      ) : (
-                        <ArrowDownRight className="h-3.5 w-3.5" />
-                      )}
-                      {Math.abs(product.change).toFixed(1)}pp
+                    <div className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
+                      <span>—</span>
                     </div>
                   </td>
                 </tr>

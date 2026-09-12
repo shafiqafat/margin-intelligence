@@ -26,7 +26,7 @@ const navigation = [
   { title: "Reports", href: "/reports", icon: FileText },
 ];
 
-export function Sidebar() {
+export function Sidebar({ alertCount }: { alertCount: number }) {
   const pathname = usePathname();
 
   return (
@@ -82,9 +82,9 @@ export function Sidebar() {
 
               <span>{item.title}</span>
 
-              {item.title === "Alerts" && (
+              {item.title === "Alerts" && alertCount > 0 && (
                 <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive/10 px-1.5 text-[10px] font-semibold text-destructive">
-                  3
+                  {alertCount}
                 </span>
               )}
             </Link>

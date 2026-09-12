@@ -1,58 +1,49 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
   Lightbulb,
   TrendingDown,
-  TrendingUp,
-  AlertTriangle,
 } from "lucide-react";
 
-const insights = [
-  {
-    type: "risk",
-    title: "Premium Hoodie margin dropped 8.2pp",
-    description: "Supplier costs increased across the last three purchases.",
-    impact: "-$210/month",
-    action: "Review supplier pricing",
-    icon: TrendingDown,
-  },
-  {
-    type: "warning",
-    title: "Supplier A pricing increased 14%",
-    description:
-      "Average purchase cost is significantly higher than previous purchases.",
-    impact: "-$145/month",
-    action: "Compare supplier prices",
-    icon: AlertTriangle,
-  },
-  {
-    type: "opportunity",
-    title: "Canvas Bag supplier opportunity",
-    description: "Supplier B currently offers a lower average purchase cost.",
-    impact: "+$96/month",
-    action: "Review supplier",
-    icon: Lightbulb,
-  },
-];
+type DashboardInsight = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  description: string;
+  financial_impact: number;
+  status: string;
+  what_to_investigate?: string | null;
+};
 
-function getInsightStyles(type: string) {
-  if (type === "risk") {
+type InsightsPreviewProps = {
+  insights: DashboardInsight[];
+  currency: string;
+};
+
+function getInsightStyles(severity: string) {
+  if (severity === "risk") {
     return {
       wrapper: "bg-red-50/70 hover:bg-red-50",
       icon: "bg-red-100 text-red-600",
       badge: "bg-red-100 text-red-700",
       impact: "text-red-600",
       accent: "bg-red-500",
+      label: "Risk",
+      Icon: TrendingDown,
     };
   }
 
-  if (type === "warning") {
+  if (severity === "warning") {
     return {
       wrapper: "bg-amber-50/70 hover:bg-amber-50",
       icon: "bg-amber-100 text-amber-600",
       badge: "bg-amber-100 text-amber-700",
       impact: "text-red-600",
       accent: "bg-amber-500",
+      label: "Warning",
+      Icon: AlertTriangle,
     };
   }
 
@@ -62,10 +53,39 @@ function getInsightStyles(type: string) {
     badge: "bg-emerald-100 text-emerald-700",
     impact: "text-emerald-600",
     accent: "bg-emerald-500",
+    label: "Opportunity",
+    Icon: Lightbulb,
   };
 }
 
-export function InsightsPreview() {
+export function InsightsPreview({ insights, currency }: InsightsPreviewProps) {
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(Math.abs(value));
+
+  const activeInsights = insights
+    .filter((insight) =>
+      ["new", "viewed", "investigating", "action_taken"].includes(
+        insight.status,
+      ),
+    )
+    .sort((a, b) => {
+      const severityOrder: Record<string, number> = {
+        risk: 0,
+        warning: 1,
+        opportunity: 2,
+        info: 3,
+      };
+
+      return (
+        (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4)
+      );
+    })
+    .slice(0, 3);
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
       {/* Header */}
@@ -97,81 +117,99 @@ export function InsightsPreview() {
 
       {/* Insights */}
       <div className="flex flex-1 flex-col gap-3 p-3">
-        {insights.map((insight) => {
-          const Icon = insight.icon;
-          const styles = getInsightStyles(insight.type);
+        {activeInsights.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed p-6 text-center">
+            <div>
+              <Lightbulb className="mx-auto h-7 w-7 text-muted-foreground/50" />
 
-          return (
-            <div
-              key={insight.title}
-              className={`group relative flex flex-1 overflow-hidden rounded-lg border p-4 transition-colors ${styles.wrapper}`}
-            >
-              {/* Semantic accent */}
-              <div
-                className={`absolute inset-y-0 left-0 w-1 ${styles.accent}`}
-              />
+              <p className="mt-2 text-sm font-medium">No active insights</p>
 
-              <div className="flex min-w-0 flex-1 gap-3">
-                {/* Icon */}
-                <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${styles.icon}`}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
-
-                {/* Content */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold">{insight.title}</p>
-
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${styles.badge}`}
-                    >
-                      {insight.type === "risk"
-                        ? "Risk"
-                        : insight.type === "warning"
-                          ? "Warning"
-                          : "Opportunity"}
-                    </span>
-                  </div>
-
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {insight.description}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
-                    <div>
-                      <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Estimated impact
-                      </p>
-
-                      <p
-                        className={`mt-0.5 text-sm font-semibold ${styles.impact}`}
-                      >
-                        {insight.impact}
-                      </p>
-                    </div>
-
-                    <div className="hidden h-8 w-px bg-border sm:block" />
-
-                    <div>
-                      <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Suggested action
-                      </p>
-
-                      <p className="mt-0.5 text-sm font-medium text-primary">
-                        {insight.action}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Arrow */}
-                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Your business currently has no issues or opportunities requiring
+                attention.
+              </p>
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          activeInsights.map((insight) => {
+            const styles = getInsightStyles(insight.severity);
+
+            const Icon = styles.Icon;
+
+            const isPositive = insight.financial_impact > 0;
+
+            return (
+              <Link
+                key={insight.id}
+                href={`/insights/${insight.id}`}
+                className={`group relative flex flex-1 overflow-hidden rounded-lg border p-4 transition-colors ${styles.wrapper}`}
+              >
+                {/* Semantic accent */}
+                <div
+                  className={`absolute inset-y-0 left-0 w-1 ${styles.accent}`}
+                />
+
+                <div className="flex min-w-0 flex-1 gap-3">
+                  {/* Icon */}
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${styles.icon}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold">{insight.title}</p>
+
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${styles.badge}`}
+                      >
+                        {styles.label}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {insight.description}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
+                      <div>
+                        <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                          Estimated impact
+                        </p>
+
+                        <p
+                          className={`mt-0.5 text-sm font-semibold ${
+                            isPositive ? "text-emerald-600" : "text-red-600"
+                          }`}
+                        >
+                          {isPositive ? "+" : "-"}
+                          {formatMoney(insight.financial_impact)}
+                        </p>
+                      </div>
+
+                      <div className="hidden h-8 w-px bg-border sm:block" />
+
+                      <div>
+                        <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                          Suggested action
+                        </p>
+
+                        <p className="mt-0.5 text-sm font-medium text-primary">
+                          {insight.what_to_investigate ?? "Review this insight"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

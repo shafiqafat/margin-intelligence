@@ -5,6 +5,7 @@ import { calculateProductNetRevenue } from "./calculateRevenue";
 import { calculateContribution } from "./calculateContribution";
 import { calculateContributionMargin } from "./calculateMargin";
 import { calculateTrueUnitCost } from "./calculateTrueCost";
+import { calculateProductTrueCost } from "./calculateTrueCost";
 
 type Product = {
   id: string;
@@ -98,6 +99,11 @@ export function calculateProductProfitability({
     purchaseItems,
     allocations,
   );
+  const trueCostDetails = calculateProductTrueCost(
+    product.id,
+    purchaseItems,
+    allocations,
+  );
 
   const contribution = calculateContribution({
     netRevenue,
@@ -131,6 +137,8 @@ export function calculateProductProfitability({
     marginGap,
 
     trueUnitCost,
+
+    allocatedDirectCosts: trueCostDetails.allocatedDirectCosts,
 
     netRevenue,
     contribution,

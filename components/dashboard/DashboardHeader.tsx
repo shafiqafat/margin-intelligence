@@ -1,6 +1,23 @@
+"use client";
 import { CalendarDays, ChevronDown } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export function DashboardHeader() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const range = searchParams.get("range") ?? "30";
+
+  function handleRangeChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const value = event.target.value;
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.set("range", value);
+
+    router.push(`${pathname}?${params.toString()}`);
+  }
   return (
     <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
@@ -20,7 +37,8 @@ export function DashboardHeader() {
 
       <div className="relative shrink-0">
         <select
-          defaultValue="30"
+          value={range}
+          onChange={handleRangeChange}
           className="h-10 w-full appearance-none rounded-lg border bg-card pl-9 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-all hover:border-primary/30 hover:shadow focus:border-primary/40 focus:ring-2 focus:ring-primary/10 sm:w-36"
           aria-label="Select dashboard time period"
         >
